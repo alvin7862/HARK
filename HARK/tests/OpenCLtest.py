@@ -6,7 +6,9 @@ import os
 import opencl4py as cl
 import numpy as np
 os.environ["PYOPENCL_CTX"] = "0:0" # This is where you set which devices are in the context
-# EVERY machine will have a device 0:0
+# EVERY machine will have a device 0:0, which by default is the CPU
+# Other devices will have various numbers
+# Substitute her the device you want to compare to the CPU
 from time import time
 
 if __name__ == "__main__":

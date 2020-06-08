@@ -1,5 +1,5 @@
 # %%
-from time import process_time, time
+from time import process_time
 import numpy as np
 import matplotlib.pyplot as plt
 from HARK.utilities import plotFuncs
@@ -9,7 +9,6 @@ from HARK.ConsumptionSaving.ConsAggShockModel import (
     AggShockMarkovConsumerType,
     CobbDouglasMarkovEconomy,
 )
-from HARK.distribution import DiscreteDistribution
 from copy import deepcopy
 def mystr(number):
     return "{:.4f}".format(number)
@@ -19,11 +18,11 @@ def mystr(number):
 # Solve an AggShockConsumerType's microeconomic problem
 solve_agg_shocks_micro = False
 # Solve for the equilibrium aggregate saving rule in a CobbDouglasEconomy
-solve_agg_shocks_market = False
+solve_agg_shocks_market = True
 # Solve an AggShockMarkovConsumerType's microeconomic problem
 solve_markov_micro = False
 # Solve for the equilibrium aggregate saving rule in a CobbDouglasMarkovEconomy
-solve_markov_market = False
+solve_markov_market = True
 # Solve a simple Krusell-Smith-style two state, two shock model
 solve_krusell_smith = True
 # Solve a CobbDouglasEconomy with many states, potentially utilizing the "state jumper"
@@ -71,10 +70,12 @@ if solve_agg_shocks_micro:
 # %%
 if solve_agg_shocks_market:
     # Solve the "macroeconomic" model by searching for a "fixed point dynamic rule"
-    t_start = time()
-    print("Now solving for the equilibrium of a Cobb-Douglas economy.  This might take a few minutes...")
+    t_start = process_time()
+    print(
+        "Now solving for the equilibrium of a Cobb-Douglas economy.  This might take a few minutes..."
+    )
     EconomyExample.solve()
-    t_end = time()
+    t_end = process_time()
     print(
         'Solving the "macroeconomic" aggregate shocks model took '
         + str(t_end - t_start)
@@ -126,7 +127,10 @@ if solve_markov_micro:
         + " seconds."
     )
 
-    print("Consumption function at each aggregate market resources-to-labor ratio gridpoint (for each macro state):")
+    print(
+        "Consumption function at each aggregate market \
+            resources-to-labor ratio gridpoint (for each macro state):"
+    )
     m_grid = np.linspace(0, 10, 200)
     AggShockMrkvExample.unpackcFunc()
     for i in range(2):
@@ -142,19 +146,20 @@ if solve_markov_micro:
 # %%
 if solve_markov_market:
     # Solve the "macroeconomic" model by searching for a "fixed point dynamic rule"
-    t_start = time()
-    MrkvEconomyExample.verbose = True
-    MrkvEconomyExample.act_T = 500
+    t_start = process_time()
     print("Now solving a two-state Markov economy.  This should take a few minutes...")
     MrkvEconomyExample.solve()
-    t_end = time()
+    t_end = process_time()
     print(
         'Solving the "macroeconomic" aggregate shocks model took '
         + str(t_end - t_start)
         + " seconds."
     )
 
-    print("Consumption function at each aggregate market resources-to-labor ratio gridpoint (for each macro state):")
+    print(
+        "Consumption function at each aggregate market \
+            resources-to-labor ratio gridpoint (for each macro state):"
+    )
     m_grid = np.linspace(0, 10, 200)
     AggShockMrkvExample.unpackcFunc()
     for i in range(2):
@@ -173,26 +178,28 @@ if solve_krusell_smith:
     # NOTE: These agents aren't exactly like KS, as they don't have serially correlated unemployment
     KSexampleType = deepcopy(AggShockMrkvExample)
     KSexampleType.IncomeDstn[0] = [
-        DiscreteDistribution(np.array([0.96, 0.04]), [np.array([1.0, 1.0]), np.array([1.0 / 0.96, 0.0])]),
-         DiscreteDistribution(np.array([0.90, 0.10]), [np.array([1.0, 1.0]), np.array([1.0 / 0.90, 0.0])]),
+        [np.array([0.96, 0.04]), np.array([1.0, 1.0]), np.array([1.0 / 0.96, 0.0])],
+        [np.array([0.90, 0.10]), np.array([1.0, 1.0]), np.array([1.0 / 0.90, 0.0])],
     ]
 
     # Make a KS economy
     KSeconomy = deepcopy(MrkvEconomyExample)
     KSeconomy.agents = [KSexampleType]
     KSeconomy.AggShkDstn = [
-        DiscreteDistribution(np.array([1.0]), [np.array([1.0]), np.array([1.05])]),
-        DiscreteDistribution(np.array([1.0]), [np.array([1.0]), np.array([0.95])]),
+        [np.array([1.0]), np.array([1.0]), np.array([1.05])],
+        [np.array([1.0]), np.array([1.0]), np.array([0.95])],
     ]
     KSeconomy.PermGroFacAgg = [1.0, 1.0]
     KSexampleType.getEconomyData(KSeconomy)
     KSeconomy.makeAggShkHist()
 
     # Solve the K-S model
-    t_start = time()
-    print("Now solving a Krusell-Smith-style economy.  This should take about a minute...")
+    t_start = process_time()
+    print(
+        "Now solving a Krusell-Smith-style economy.  This should take about a minute..."
+    )
     KSeconomy.solve()
-    t_end = time()
+    t_end = process_time()
     print("Solving the Krusell-Smith model took " + str(t_end - t_start) + " seconds.")
 
 # %%

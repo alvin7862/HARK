@@ -10,10 +10,9 @@ from __future__ import absolute_import
 from builtins import str
 from builtins import range
 from builtins import object
-from HARK import AgentType, Solution, NullFunc, HARKobject
+from HARK import AgentType, Solution, NullFunc
 from HARK.interpolation import LinearInterp
-from HARK.utilities import plotFuncs
-from HARK.distribution import Uniform
+from HARK.utilities import approxUniform, plotFuncs
 import numpy as np
 import scipy.stats as stats
 import FashionVictimParams as Params
@@ -40,7 +39,7 @@ class FashionSolution(Solution):
             as a jock, as a function of the population punk proportion.
         switchFuncPunk : function
             Probability of switching styles (to jock) when entering the period
-            as a punk, as a function of the population punk proportion.
+            as a punkk, as a function of the population punk proportion.
 
         Returns
         -------
@@ -62,7 +61,7 @@ class FashionSolution(Solution):
         self.distance_criteria = ['VfuncJock','VfuncPunk']
 
 
-class FashionEvoFunc(HARKobject):
+class FashionEvoFunc(Solution):
     '''
     A class for representing a dynamic fashion rule in the FashionVictim model.
     Fashion victims believe that the proportion of punks evolves according to
@@ -138,7 +137,7 @@ class FashionVictimType(AgentType):
         new instance of FashionVictimType
         '''
         # Initialize a basic AgentType
-        AgentType.__init__(self,solution_terminal=FashionVictimType._solution_terminal,cycles=0,pseudo_terminal=True,**kwds)
+        AgentType.__init__(self,solution_terminal=FashionVictimType._solution_terminal,cycles=0,time_flow=True,pseudo_terminal=True,**kwds)
 
         # Add class-specific features
         self.time_inv = ['DiscFac','conformUtilityFunc','punk_utility','jock_utility','switchcost_J2P','switchcost_P2J','pGrid','pEvolution','pref_shock_mag']
@@ -158,18 +157,18 @@ class FashionVictimType(AgentType):
 
         Parameters
         ----------
-        None
+        none
 
         Returns
         -------
-        None
+        none
         '''
         self.pEvolution = np.zeros((self.pCount,self.pNextCount))
         for j in range(self.pCount):
             pNow = self.pGrid[j]
             pNextMean = self.pNextIntercept + self.pNextSlope*pNow
-            dist = Uniform(bot=pNextMean-self.pNextWidth,top=pNextMean+self.pNextWidth)
-            self.pEvolution[j,:] = dist.approx(self.pNextCount).X
+            dist = approxUniform(N=self.pNextCount,bot=pNextMean-self.pNextWidth,top=pNextMean+self.pNextWidth)[1]
+            self.pEvolution[j,:] = dist
 
     def update(self):
         '''
@@ -181,11 +180,11 @@ class FashionVictimType(AgentType):
 
         Parameters
         ----------
-        None
+        none
 
         Returns
         -------
-        None
+        none
         '''
         self.conformUtilityFunc = lambda x : stats.beta.pdf(x,self.uParamA,self.uParamB)
         self.pGrid = np.linspace(0.0001,0.9999,self.pCount)
@@ -196,14 +195,6 @@ class FashionVictimType(AgentType):
         Resets this agent type to prepare it for a new simulation run.  This
         includes resetting the random number generator and initializing the style
         of each agent of this type.
-        
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        None
         '''
         self.resetRNG()
         sNow = np.zeros(self.pop_size)
@@ -217,11 +208,11 @@ class FashionVictimType(AgentType):
 
         Parameters
         ----------
-        None
+        none
 
         Returns
         -------
-        None
+        none
         '''
         # This step is necessary in the general equilibrium framework, where a
         # new evolution rule is calculated after each simulation run, but only
@@ -234,11 +225,11 @@ class FashionVictimType(AgentType):
 
         Parameters
         ----------
-        None
+        none
 
         Returns
         -------
-        None
+        none
         '''
         self.switchFuncPunk = self.solution[0].switchFuncPunk
         self.switchFuncJock = self.solution[0].switchFuncJock
@@ -253,11 +244,11 @@ class FashionVictimType(AgentType):
 
         Parameters
         ----------
-        None
+        none
 
         Returns
         -------
-        None
+        none
         '''
         pNow    = self.pNow
         sPrev   = self.sNow
@@ -278,11 +269,11 @@ class FashionVictimType(AgentType):
 
         Parameters
         ----------
-        None
+        none
 
         Returns
         -------
-        None
+        none
         '''
         self.simOnePrd()
 
@@ -384,11 +375,6 @@ def calcPunkProp(sNow):
         agent in each type of this market (0=jock, 1=punk).
     pop_size : [int]
         List with the number of agents of each type in the market.  Unused.
-        
-    Returns
-    -------
-    (unnamed) : FashionMarketInfo
-        A trivial object with the proportion of punks in the population.
     '''
     sNowX = np.asarray(sNow).flatten()
     pNow  = np.mean(sNowX)
@@ -426,7 +412,7 @@ def calcFashionEvoFunc(pNow):
 ###############################################################################
 ###############################################################################
 def main():
-    from time import time
+    from time import clock
     from HARK import Market
     mystr = lambda number : "{:.4f}".format(number)
     import matplotlib.pyplot as plt
@@ -439,9 +425,9 @@ def main():
     print('Utility function:')
     plotFuncs(TestType.conformUtilityFunc,0,1)
 
-    t_start = time()
+    t_start = clock()
     TestType.solve()
-    t_end = time()
+    t_end = clock()
     print('Solving a fashion victim micro model took ' + mystr(t_end-t_start) + ' seconds.')
 
     print('Jock value function:')
